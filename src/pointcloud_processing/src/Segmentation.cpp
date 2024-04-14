@@ -18,15 +18,35 @@ public:
     // Publishers
     floor_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("floor_cloud", 10);
     non_floor_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("non_floor_cloud", 10);
+    height_filtered_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("height_filtered_cloud", 10);
 
     // Declare parameters
     this->declare_parameter<float>("distance_threshold", 0.01);
+    this->declare_parameter<float>("z_min", 1);
+    this->declare_parameter<float>("z_max", 10);
     }
 
 private:
+    void filterPointCloudByHeight(pcl::PointCloud<pcl::PointXYZ>::Ptr& cloud, float z_min, float z_max) {
+        pcl::PassThrough<pcl::PointXYZ> pass;
+        pass.setInputCloud(cloud);
+        pass.setFilterFieldName("z");
+        pass.setFilterLimits(z_min, z_max);
+        pass.filter(*cloud);  // This will modify the input cloud to contain only the filtered points
+    }
+
     void point_cloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>());
         pcl::fromROSMsg(*msg, *cloud);
+
+        // Filter the point cloud by height
+        // float z_min, z_max;
+        // this->get_parameter("z_min", z_min);
+        // this->get_parameter("z_max", z_max);
+        // this->filterPointCloudByHeight(cloud, z_min, z_max);
+        // sensor_msgs::msg::PointCloud2 height_filtered_output;
+        // pcl::toROSMsg(*cloud, height_filtered_output);
+        // height_filtered_pub_->publish(height_filtered_output);
 
         // Segment the ground
         pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
@@ -35,29 +55,66 @@ private:
         seg.setOptimizeCoefficients(true);
         seg.setModelType(pcl::SACMODEL_PLANE);
         seg.setMethodType(pcl::SAC_RANSAC);
+
+        
+        // Eigen::Vector3f axis = Eigen::Vector3f(0, 0, -1);  // Adjust this if your coordinate system differs
+        // seg.setAxis(axis);
+        // const float degree_to_rad = M_PI / 180.0;
+        // seg.setEpsAngle(15.0 * degree_to_rad); // 15 degrees tolerance in radians
+
         float distance_threshold;
         this->get_parameter("distance_threshold", distance_threshold);
         seg.setDistanceThreshold(distance_threshold);
-        seg.setInputCloud(cloud);
-        seg.segment(*inliers, *coefficients);
-
-        if (inliers->indices.empty()) {
-            RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model for the given dataset.");
-            return;
-        }
-
-        // Extract the inliers (floor points)
-        pcl::ExtractIndices<pcl::PointXYZ> extract;
-        extract.setInputCloud(cloud);
-        extract.setIndices(inliers);
-        extract.setNegative(false);
+        
+        // iteratively fit a plane to the data and remove the inliers
+        int max_iter = 3;
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZ>());
-        extract.filter(*cloud_plane);
-
-        // Extract non-floor points
-        extract.setNegative(true);
         pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_non_floor(new pcl::PointCloud<pcl::PointXYZ>());
-        extract.filter(*cloud_non_floor);
+        pcl::ExtractIndices<pcl::PointXYZ> extract;
+        for(int i=0; i<max_iter; i++) 
+        {
+            seg.setInputCloud(cloud);
+            seg.segment(*inliers, *coefficients);
+            if (inliers->indices.empty()) {
+                RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model for the given dataset.");
+                return;
+            }
+            // Extract the inliers (floor points)
+            
+            extract.setInputCloud(cloud);
+            extract.setIndices(inliers);
+            extract.setNegative(false);
+            
+            extract.filter(*cloud_plane);
+
+            // Extract non-floor points
+            extract.setNegative(true);
+            
+            extract.filter(*cloud_non_floor);
+
+            // Update the cloud with non-floor points
+            cloud = cloud_non_floor;
+        }
+        // seg.setInputCloud(cloud);
+        // seg.segment(*inliers, *coefficients);
+
+        // if (inliers->indices.empty()) {
+        //     RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model for the given dataset.");
+        //     return;
+        // }
+
+        // // Extract the inliers (floor points)
+        // pcl::ExtractIndices<pcl::PointXYZ> extract;
+        // extract.setInputCloud(cloud);
+        // extract.setIndices(inliers);
+        // extract.setNegative(false);
+        // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_plane(new pcl::PointCloud<pcl::PointXYZ>());
+        // extract.filter(*cloud_plane);
+
+        // // Extract non-floor points
+        // extract.setNegative(true);
+        // pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_non_floor(new pcl::PointCloud<pcl::PointXYZ>());
+        // extract.filter(*cloud_non_floor);
 
         sensor_msgs::msg::PointCloud2 non_floor_output;
         pcl::toROSMsg(*cloud_non_floor, non_floor_output);
@@ -73,7 +130,7 @@ private:
     }
 
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr floor_pub_, non_floor_pub_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr floor_pub_, non_floor_pub_, height_filtered_pub_;
 };
 
 int main(int argc, char** argv) {
