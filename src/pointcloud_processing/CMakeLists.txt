@@ -24,6 +24,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(PCL REQUIRED COMPONENTS common io)
 find_package(PCL 1.8 REQUIRED COMPONENTS common io filters)
 find_package(rviz2 REQUIRED)
+find_package(PCL REQUIRED COMPONENTS common io segmentation)
 
 add_definitions(${PCL_DEFINITIONS})
 link_directories(${PCL_LIBRARY_DIRS})
@@ -98,6 +99,28 @@ include_directories(
 install(TARGETS
   noise_filter_node 
   DESTINATION lib/${PROJECT_NAME}
+)
+
+add_executable(segmentation_node src/Segmentation.cpp)
+ament_target_dependencies(segmentation_node
+  rclcpp
+  sensor_msgs
+  PCL
+)
+target_link_libraries(segmentation_node ${PCL_LIBRARIES})
+
+include_directories(
+  include
+  ${PCL_INCLUDE_DIRS}
+)
+
+install(TARGETS
+  segmentation_node 
+  DESTINATION lib/${PROJECT_NAME}
+)
+install(
+  DIRECTORY rviz
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()

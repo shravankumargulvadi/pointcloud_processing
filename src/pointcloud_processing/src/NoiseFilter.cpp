@@ -11,6 +11,7 @@ public:
         subscriber_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
             "raw_point_cloud", 10, std::bind(&OutlierRemovalNode::callback, this, std::placeholders::_1));
         publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("filtered_cloud", 10);
+        
         // declare SOR parameters
         this->declare_parameter<int16_t>("sor_mean_k", 50); // number of neighbors to analyze for each point
         this->declare_parameter<float>("sor_stddev_mul_thresh", 1.0); // standard deviation multiplier threshold
