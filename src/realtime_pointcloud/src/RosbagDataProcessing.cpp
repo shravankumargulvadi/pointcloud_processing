@@ -9,37 +9,15 @@ class PointCloudModifier : public rclcpp::Node
 {
 public:
     PointCloudModifier()
-    : Node("point_cloud_modifier")
+    : Node("rosbag_data_processing_node")
     {
-        publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("modified_point_cloud_topic", 10);
-        
-        auto qos = rclcpp::QoS(rclcpp::KeepAll())
-        .reliability(RMW_QOS_POLICY_RELIABILITY_RELIABLE)
-        .durability(RMW_QOS_POLICY_DURABILITY_TRANSIENT_LOCAL);
+        publisher_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("raw_point_cloud", 10);
         
         subscription_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/tof_camera/xyz", 10, std::bind(&PointCloudModifier::listener_callback, this, std::placeholders::_1));
-
-        tf_broadcaster_ = std::make_shared<tf2_ros::TransformBroadcaster>(*this);
-        send_transform();
     }
 
 private:
-    void send_transform()
-    {
-        geometry_msgs::msg::TransformStamped t;
-        t.header.stamp = this->get_clock()->now();
-        t.header.frame_id = "map";
-        t.child_frame_id = "sensor_frame";
-        t.transform.translation.x = 1.0;  // Adjust these values as needed
-        t.transform.translation.y = 0.0;
-        t.transform.translation.z = 0.0;
-        t.transform.rotation.x = 0.0;
-        t.transform.rotation.y = 0.0;
-        t.transform.rotation.z = 0.0;
-        t.transform.rotation.w = 1.0;
-        tf_broadcaster_->sendTransform(t);
-    }
 
     void listener_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     {
@@ -79,16 +57,24 @@ private:
                    &msg->data[i * msg->point_step],
                    modified_msg.point_step);
         }
+        // resize x,y and z
+        sensor_msgs::PointCloud2Iterator<float> iter_x(modified_msg, "x");
+        sensor_msgs::PointCloud2Iterator<float> iter_y(modified_msg, "y");
+        sensor_msgs::PointCloud2Iterator<float> iter_z(modified_msg, "z");
+        for (; iter_x != iter_x.end(); ++iter_x, ++iter_y, ++iter_z) {
+            *iter_x /= 100;
+            *iter_y /= 100;
+            *iter_z /= 100;
+        }
+        
 
         // Publish the modified message
         publisher_->publish(modified_msg);
 
-        //send_transform();
     }
 
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher_;
     rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscription_;
-    std::shared_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster_;
 };
 
 int main(int argc, char * argv[])

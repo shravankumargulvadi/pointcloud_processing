@@ -40,7 +40,7 @@ void DataPublisher::publishPointCloud()
 
     sensor_msgs::msg::PointCloud2 msg;
     pcl::toROSMsg(*cloud, msg);
-    msg.header.frame_id = "base_link";
+    msg.header.frame_id = "map";
     msg.header.stamp = this->now();
     point_cloud_publisher->publish(msg);
     RCLCPP_INFO(this->get_logger(), "Published cloud with %d points", cloud->points.size());

@@ -42,7 +42,8 @@ private:
         sensor_msgs::msg::PointCloud2 output;
         pcl::toROSMsg(*cloud_filtered, output);
         output.header.stamp = this->get_clock()->now();
-        output.header.frame_id = "base_link";
+        output.header.frame_id = "map";
+        RCLCPP_INFO(this->get_logger(), "Publishing filtered point cloud in frame '%s'", output.header.frame_id.c_str());
         publisher_->publish(output);
     }
 

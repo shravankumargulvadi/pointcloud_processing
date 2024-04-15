@@ -64,7 +64,7 @@ void Voxelization::callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg)
     // Publish the data
     sensor_msgs::msg::PointCloud2 output;
     pcl::toROSMsg(*cloud_voxelized, output);
-    output.header.frame_id = "base_link";
+    output.header.frame_id = "map";
     voxelized_cloud_publisher->publish(output);
 }
 

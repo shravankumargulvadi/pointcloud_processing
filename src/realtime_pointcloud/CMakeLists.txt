@@ -24,6 +24,7 @@ find_package(PCL REQUIRED COMPONENTS common io)
 find_package(PCL 1.8 REQUIRED COMPONENTS common io filters)
 find_package(tf2_ros REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(rviz2 REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -56,6 +57,17 @@ include_directories(
 install(TARGETS
   rosbag_data_processing_node 
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install launch files
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY rviz
+  DESTINATION share/${PROJECT_NAME}
 )
 
 ament_package()
