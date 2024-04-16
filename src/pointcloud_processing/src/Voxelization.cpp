@@ -2,7 +2,7 @@
 // ROS Headers
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/point_cloud2.hpp"
-//#include "std_msgs/msg/Bool.hpp"
+
 // PCL Headers
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/point_types.h>

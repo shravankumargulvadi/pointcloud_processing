@@ -33,7 +33,7 @@ def generate_launch_description():
             name='voxelization_node',
             output='screen',
             parameters=[
-                {'leaf_size': 0.05} 
+                {'leaf_size': 0.08} 
             ]
         ),
         Node(
