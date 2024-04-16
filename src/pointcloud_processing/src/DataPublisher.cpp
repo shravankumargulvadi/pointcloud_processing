@@ -20,7 +20,7 @@ private:
 
 DataPublisher::DataPublisher() : Node("data_publisher")
 {
-    this->declare_parameter<std::string>("pcd_file_path", "/home/swathi/swathi/ros2_ws/src/Data/scans.pcd");
+    this->declare_parameter<std::string>("pcd_file_path", "ros2_ws/src/Data/scans.pcd");
     point_cloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>("raw_point_cloud", 10);
     cloud = pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
     timer_ = this->create_wall_timer(std::chrono::seconds(1), std::bind(&DataPublisher::publishPointCloud, this));

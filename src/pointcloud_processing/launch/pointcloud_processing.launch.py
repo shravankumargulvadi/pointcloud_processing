@@ -13,7 +13,7 @@ def generate_launch_description():
             executable='data_publisher_node', 
             name='data_publisher_node',
             output='screen',
-            parameters=[{'pcd_file_path': '/home/swathi/swathi/ros2_ws/src/Data/scans.pcd'}
+            parameters=[{'pcd_file_path': pkg_dir + '/Data/scans.pcd'}
             ]
         ),
         # 'sor_mean_k': 50 and 'sor_stddev_mul_thresh': 0.5 are optimal values for the used dataset

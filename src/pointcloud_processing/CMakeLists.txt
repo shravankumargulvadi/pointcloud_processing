@@ -122,5 +122,9 @@ install(
   DIRECTORY rviz
   DESTINATION share/${PROJECT_NAME}
 )
+install(
+  DIRECTORY Data
+  DESTINATION share/${PROJECT_NAME}
+)
 
 ament_package()
